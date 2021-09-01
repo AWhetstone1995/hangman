@@ -1,53 +1,101 @@
 require 'pry-byebug'
-class Game
-  attr_accessor :word, :correct_letters, :incorrect_letters, :incorrect_guesses
+require 'json'
+require_relative 'hangman'
 
-  MAX_GUESSES = 8
+class Game
+  attr_accessor :hangman
+  attr_reader :round
 
   def initialize
-    @word = choose_word
-    @correct_letters = []
-    @incorrect_letters = []
-    @incorrect_guesses = 0
+    @hangman = Hangman.new
+    @round = 0
   end
 
-  def choose_word
-    word = ''
-    pass = false
-    while pass == false
-      word = File.readlines('5desk.txt').sample
-      length = word.length
-      pass = true unless length < 5 && length > 12
+  def play_game
+    while hangman.word_guessed == false && hangman.lives.positive?
+      # binding.pry
+      load_game if round.zero?
+      puts hangman.word
+      hangman.print_board
+      choice = guess_letter
+      if choice == 'save'
+        save_game
+        return
+      end
     end
-    word
+    win_or_lose
+  end
+
+  def win_or_lose
+    if hangman.lives.zero?
+      puts "You lose. \n"
+      puts "The word was #{hangman.word}"
+    else
+      puts 'You win.'
+    end
   end
 
   def guess_letter
-    guess = ''
-    pass = false
-    puts 'Please make a guess.'
-    while pass == false
-      guess = gets.chomp
-      pass = true unless guess.length > 1 || Integer(guess)
-      if pass == false then puts 'Invalid guess. Try again.' end
+    puts 'Please make a guess. Or save if you would like to continue later.'
+    guess = gets.chomp.to_s.downcase
+    while check_validity(guess)
+      puts 'Invalid guess. Try again.'
+      guess = gets.chomp.downcase
     end
-    check_guess(guess)
+    return guess if guess == 'save'
+
+    hangman.check_guess(guess)
   end
 
-  def check_guess(letter)
-    if word.include?(letter)
-      correct_letters.push(letter)
-    else
-      incorrect_letters.push(letter)
-      self.incorrect_guesses += 1
+  def check_validity(input)
+    (!input.match?('save') && !input.match?(/^[a-z]$/)) ||
+      (hangman.dashes.include?(input) || hangman.incorrect_letters.include?(input))
+  end
+
+  def save_game
+    File.open('save.json', 'w') do |file|
+      file.puts(hangman_to_json)
     end
-    puts "Incorrect guesses: #{incorrect_guesses}"
-    puts "Correct letters: #{correct_letters}"
-    puts "Incorrect letters: #{incorrect_letters}"
+  end
+
+  def hangman_to_json
+    JSON.dump({
+                word: hangman.word,
+                lives: hangman.lives,
+                incorrect_letters: hangman.incorrect_letters,
+                dashes: hangman.dashes,
+                word_guessed: hangman.word_guessed
+              })
+  end
+
+  def hangman_from_json(file)
+    hangman_data = JSON.parse(File.read(file))
+    self.hangman = Hangman.new(
+      hangman_data['word'],
+      hangman_data['lives'],
+      hangman_data['incorrect_letters'],
+      hangman_data['dashes'],
+      hangman_data['word_guessed']
+    )
+  end
+
+  def load_game
+    return unless File.exist?('save.json')
+
+    puts 'Would you like to load a previous game? (Y/N)'
+    choice = gets.chomp.downcase
+    return unless choice == 'y'
+
+    File.open('save.json', 'r') do |file|
+      hangman_from_json(file)
+    end
+    puts hangman.incorrect_letters.class
+    File.delete('save.json')
   end
 end
 
 
-game = Game.new
-puts game.word
-puts game.guess_letter
+Game.new.play_game
+# puts game.word
+# puts game.guess_letter
+# game.print_board
