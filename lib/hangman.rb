@@ -32,7 +32,8 @@ class Hangman
         dashes[i] = char if char == letter
       end
     else
-      incorrect_letters.push(letter.to_s)
+      puts "Sorry, the word does not contain that letter. Try again. \n"
+      incorrect_letters.push(letter)
       self.lives -= 1
     end
     self.word_guessed = true unless dashes.include?('_')

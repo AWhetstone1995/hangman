@@ -16,7 +16,7 @@ class Game
       # binding.pry
       load_game if round.zero?
       puts hangman.word
-      hangman.print_board
+      puts "#{hangman.print_board} \n"
       choice = guess_letter
       if choice == 'save'
         save_game
@@ -36,19 +36,42 @@ class Game
   end
 
   def guess_letter
-    puts 'Please make a guess. Or save if you would like to continue later.'
-    guess = gets.chomp.to_s.downcase
+    puts "Please guess a letter from A-Z. Or type 'save' if you would like to continue later.\n"
+    guess = gets.chomp.downcase
     while check_validity(guess)
-      puts 'Invalid guess. Try again.'
+      puts "Invalid guess. Please guess a letter from A to Z, or type 'save' if you'd like to continue later.\n"
       guess = gets.chomp.downcase
     end
-    return guess if guess == 'save'
+    if guess == 'save'
+      puts "Game Saved\n"
+      return guess
+    end
 
     hangman.check_guess(guess)
   end
 
   def check_validity(input)
-    (!input.match?('save') && !input.match?(/^[a-z]$/)) ||
+    # unless input.match('save')
+    #   unless input.match(/^[a-z]$/)
+    #     puts "Invalid guess. Please input a letter from A to Z. \n"
+    #     return false
+    #   end
+
+    #   if hangman.dashes.include?(input)
+    #     puts "Already guessed, please try again with a letter from A to Z. \n"
+    #     return false
+    #   end
+
+    #   if hangman.incorrect_letters.include?(input)
+    #     puts "Already guessed, please try again with a letter from A to Z. \n"
+    #     return false
+    #   end
+    #   puts "Input = #{input}"
+    #   puts "Invalid input. Please make a guess or type 'save'. \n"
+    #   return false
+    # end
+    # true
+    (!input.match?(/\bsave\b/) && !input.match?(/^[a-z]$/)) ||
       (hangman.dashes.include?(input) || hangman.incorrect_letters.include?(input))
   end
 
@@ -84,12 +107,15 @@ class Game
 
     puts 'Would you like to load a previous game? (Y/N)'
     choice = gets.chomp.downcase
+    while choice != 'y' && choice != 'n'
+      puts 'Please input Y/N'
+      choice = gets.chomp.downcase
+    end
     return unless choice == 'y'
 
     File.open('save.json', 'r') do |file|
       hangman_from_json(file)
     end
-    puts hangman.incorrect_letters.class
     File.delete('save.json')
   end
 end
