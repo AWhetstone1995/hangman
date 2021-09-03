@@ -2,26 +2,25 @@ require 'pry-byebug'
 require 'json'
 require_relative 'hangman'
 
+# Controls game logic and advances the game rounds
 class Game
-  attr_accessor :hangman
-  attr_reader :round
+  attr_accessor :hangman, :round
 
   def initialize
     @hangman = Hangman.new
-    @round = 0
+    @round = 0 # count of rounds
   end
 
   def play_game
     while hangman.word_guessed == false && hangman.lives.positive?
-      # binding.pry
       load_game if round.zero?
-      puts hangman.word
       puts "#{hangman.print_board} \n"
       choice = guess_letter
       if choice == 'save'
         save_game
         return
       end
+      self.round += 1
     end
     win_or_lose
   end
@@ -31,6 +30,7 @@ class Game
       puts "You lose. \n"
       puts "The word was #{hangman.word}"
     else
+      puts "#{hangman.print_board} \n"
       puts 'You win.'
     end
   end
@@ -39,40 +39,38 @@ class Game
     puts "Please guess a letter from A-Z. Or type 'save' if you would like to continue later.\n"
     guess = gets.chomp.downcase
     while check_validity(guess)
-      puts "Invalid guess. Please guess a letter from A to Z, or type 'save' if you'd like to continue later.\n"
       guess = gets.chomp.downcase
     end
-    if guess == 'save'
-      puts "Game Saved\n"
-      return guess
-    end
+    if guess == 'save' then return guess end
 
     hangman.check_guess(guess)
   end
 
   def check_validity(input)
-    # unless input.match('save')
-    #   unless input.match(/^[a-z]$/)
-    #     puts "Invalid guess. Please input a letter from A to Z. \n"
-    #     return false
-    #   end
+    if input.length == hangman.word.length
+      return false
+    end
 
-    #   if hangman.dashes.include?(input)
-    #     puts "Already guessed, please try again with a letter from A to Z. \n"
-    #     return false
-    #   end
+    if hangman.dashes.include?(input)
+      puts "Already guessed, please try again with a letter from A to Z. \n"
+      return true
+    end
 
-    #   if hangman.incorrect_letters.include?(input)
-    #     puts "Already guessed, please try again with a letter from A to Z. \n"
-    #     return false
-    #   end
-    #   puts "Input = #{input}"
-    #   puts "Invalid input. Please make a guess or type 'save'. \n"
-    #   return false
-    # end
-    # true
-    (!input.match?(/\bsave\b/) && !input.match?(/^[a-z]$/)) ||
-      (hangman.dashes.include?(input) || hangman.incorrect_letters.include?(input))
+    if hangman.incorrect_letters.include?(input)
+      puts "Already guessed, please try again with a letter from A to Z. \n"
+      return true
+    end
+
+    if input.match(/^save$/)
+      puts "Game Saved \n"
+      return false
+    end
+
+    unless input.match(/^[a-z]$/)
+      puts "Invalid guess. Please input a letter from A to Z. \n"
+      return true
+    end
+    false
   end
 
   def save_game
@@ -120,6 +118,14 @@ class Game
   end
 end
 
+# input = 'ball'
+# test1 = 'b'
+
+# if input.match(test1)
+#   puts true
+# else
+#   puts false
+# end
 
 Game.new.play_game
 # puts game.word
