@@ -1,4 +1,3 @@
-require 'pry-byebug'
 require 'json'
 require_relative 'hangman'
 
